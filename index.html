@@ -3,9 +3,18 @@
 <head>
   <title>Redirecionando...</title>
   <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Redirecionando...</h1>
+  <h1 id="status">Redirecionando...</h1>
+  <p id="details"></p>
+
   <script src="https://cdn.jsdelivr.net/npm/aws-sdk@2.1485.0/dist/aws-sdk.min.js"></script>
   <script>
     AWS.config.region = 'sa-east-1';
@@ -13,26 +22,38 @@
       IdentityPoolId: 'sa-east-1:cd046010-fbb9-4a9e-a2cb-f984de1ec847'
     });
 
-    const docClient = new AWS.DynamoDB.DocumentClient();
-
     const hash = window.location.hash;
     const shortId = hash ? hash.substring(1) : null;
 
     if (!shortId) {
-      document.body.innerHTML = "<h1>Invalid link format</h1><p>Use: lgrz.xyz/#abc123</p>";
+      show404('Formato de link inválido. Use: lgrz.xyz/#abc123');
     } else {
-      const params = {
-        TableName: "Shortener",
-        Key: { shortenedlink: shortId }
-      };
-
-      docClient.get(params, function(err, data) {
-        if (err || !data.Item) {
-          document.body.innerHTML = "<h1>Link not found</h1>";
-        } else {
-          window.location.href = data.Item.originalUrl;
+      AWS.config.credentials.get(function(err) {
+        if (err) {
+          show404('Erro 500.');
+          return;
         }
+
+        const docClient = new AWS.DynamoDB.DocumentClient();
+
+        const params = {
+          TableName: "Shortener",
+          Key: { shortId: shortId }
+        };
+
+        docClient.get(params, function(err, data) {
+          if (err || !data.Item || !data.Item.originalUrl) {
+            show404('Link não encontrado.');
+          } else {
+            window.location.href = data.Item.originalUrl;
+          }
+        });
       });
+    }
+
+    function show404(message) {
+      document.getElementById('status').innerText = '404 - Link não encontrado';
+      document.getElementById('details').innerText = message;
     }
   </script>
 </body>
