@@ -38,7 +38,7 @@
 
         const params = {
           TableName: "Shortener",
-          Key: { shortenedLink: shortId }
+          Key: { shortenedlink: shortId }
         };
 
         docClient.get(params, function(err, data) {
